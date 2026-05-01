@@ -1,26 +1,1243 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meine Vercel Seite</title>
-    <style>
-        body {
-            font-family: sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f4f4f9;
-        }
-        h1 {
-            color: #333;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Schnitzeljagd ✦</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400;1,600&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ── VARIABLES ─────────────────────────────────────── */
+    :root {
+      --bg:          #07070f;
+      --surface:     #0d0d1a;
+      --surface2:    #13132a;
+      --border:      #252545;
+      --border2:     #3a3a60;
+      --gold:        #c9a84c;
+      --gold-lt:     #e8c96a;
+      --gold-dk:     #8a6e2a;
+      --cream:       #f0e6c8;
+      --muted:       #7a7a98;
+      --red:         #c0392b;
+      --red-dim:     #6b1a1a;
+      --green:       #2e7d32;
+      --green-lt:    #66bb6a;
+      --glow-gold:   rgba(201,168,76,.18);
+      --glow-red:    rgba(192,57,43,.2);
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--cream);
+      font-family: 'Crimson Text', Georgia, serif;
+      font-size: 18px;
+      line-height: 1.65;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* noise texture */
+    body::after {
+      content:'';
+      position:fixed; inset:0;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
+      pointer-events:none; z-index:9999;
+    }
+
+    /* ── LAYOUT ─────────────────────────────────────────── */
+    .wrap { max-width:680px; margin:0 auto; padding:0 1.25rem 4rem; }
+
+    /* ── HEADER ─────────────────────────────────────────── */
+    .site-header {
+      text-align:center;
+      padding:3.5rem 0 2rem;
+      border-bottom:1px solid var(--border);
+      margin-bottom:2.5rem;
+    }
+    .site-header h1 {
+      font-family:'Cinzel',serif;
+      font-size:clamp(1.8rem,6vw,2.8rem);
+      font-weight:900;
+      color:var(--gold);
+      letter-spacing:.18em;
+      text-shadow:0 0 40px rgba(201,168,76,.35);
+    }
+    .site-header p {
+      font-style:italic;
+      color:var(--muted);
+      margin-top:.4rem;
+      font-size:1rem;
+    }
+
+    /* ── COORD BAR ──────────────────────────────────────── */
+    .coord-bar {
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:.9rem 1.4rem;
+      margin-bottom:2rem;
+    }
+    .coord-bar .cb-label {
+      font-family:'Cinzel',serif;
+      font-size:.65rem;
+      letter-spacing:.18em;
+      color:var(--gold);
+      text-transform:uppercase;
+      margin-bottom:.25rem;
+    }
+    .coord-bar .cb-val {
+      font-family:'Source Code Pro',monospace;
+      font-size:.95rem;
+      color:var(--gold-lt);
+    }
+    .coord-bar .cb-hint {
+      font-size:.85rem;
+      color:var(--muted);
+      font-style:italic;
+      margin-top:.25rem;
+    }
+
+    /* ── STAGE CARD ─────────────────────────────────────── */
+    .stage-card {
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:2rem 1.75rem;
+      margin-bottom:1.75rem;
+      position:relative;
+      overflow:hidden;
+      transition:border-color .3s;
+    }
+    .stage-card.active {
+      border-color:var(--gold-dk);
+      box-shadow:0 0 0 1px var(--gold-dk), 0 0 40px rgba(201,168,76,.07);
+    }
+    .stage-card.done {
+      border-color:var(--green);
+      opacity:.7;
+    }
+    .stage-card.locked {
+      opacity:.35;
+      pointer-events:none;
+    }
+    .stage-card::before {
+      content:'';
+      position:absolute;
+      left:0; top:0; bottom:0;
+      width:3px;
+      background:linear-gradient(to bottom, var(--gold), transparent);
+      border-radius:3px 0 0 3px;
+    }
+    .stage-card.done::before { background:linear-gradient(to bottom, var(--green-lt), transparent); }
+    .stage-card.locked::before { background:var(--border); }
+
+    .stage-num {
+      font-family:'Cinzel',serif;
+      font-size:.65rem;
+      letter-spacing:.22em;
+      color:var(--gold);
+      text-transform:uppercase;
+      margin-bottom:.3rem;
+    }
+    .stage-card.done .stage-num { color:var(--green-lt); }
+
+    .stage-title {
+      font-family:'Cinzel',serif;
+      font-size:1.25rem;
+      color:var(--cream);
+      margin-bottom:1rem;
+    }
+
+    .stage-body { color:var(--cream); opacity:.88; }
+    .stage-body p { margin-bottom:.7rem; }
+
+    /* ── INPUTS ─────────────────────────────────────────── */
+    .input-row {
+      display:flex;
+      gap:.65rem;
+      margin-top:1.3rem;
+      flex-wrap:wrap;
+    }
+
+    input[type=text], input[type=password] {
+      background:rgba(255,255,255,.04);
+      border:1px solid var(--border2);
+      border-radius:6px;
+      color:var(--cream);
+      font-family:'Source Code Pro',monospace;
+      font-size:1rem;
+      padding:.6rem 1rem;
+      flex:1;
+      min-width:180px;
+      outline:none;
+      transition:border-color .2s, box-shadow .2s;
+    }
+    input:focus {
+      border-color:var(--gold);
+      box-shadow:0 0 0 2px rgba(201,168,76,.12);
+    }
+    input.err {
+      border-color:var(--red);
+      animation:shake .3s;
+    }
+    input.ok { border-color:var(--green-lt); }
+
+    @keyframes shake {
+      0%,100%{transform:translateX(0)}
+      25%{transform:translateX(-6px)}
+      75%{transform:translateX(6px)}
+    }
+
+    /* ── BUTTONS ─────────────────────────────────────────── */
+    .btn {
+      font-family:'Cinzel',serif;
+      font-size:.8rem;
+      letter-spacing:.1em;
+      text-transform:uppercase;
+      padding:.65rem 1.4rem;
+      border-radius:6px;
+      border:none;
+      cursor:pointer;
+      transition:all .2s;
+      flex-shrink:0;
+    }
+    .btn-gold {
+      background:var(--gold);
+      color:#05050a;
+      font-weight:700;
+    }
+    .btn-gold:hover { background:var(--gold-lt); box-shadow:0 0 18px rgba(201,168,76,.35); }
+    .btn-outline {
+      background:transparent;
+      color:var(--gold);
+      border:1px solid var(--gold-dk);
+    }
+    .btn-outline:hover { background:var(--glow-gold); }
+    .btn-green {
+      background:#1b4d1b;
+      color:var(--green-lt);
+      border:1px solid var(--green);
+    }
+    .btn-green:hover { background:var(--green); color:#fff; }
+    .btn-red {
+      background:var(--red-dim);
+      color:#ff9999;
+      border:1px solid var(--red);
+    }
+
+    .err-msg {
+      color:#ff7070;
+      font-size:.875rem;
+      font-style:italic;
+      margin-top:.45rem;
+      min-height:1.2em;
+    }
+
+    /* ── REVEAL BOX ──────────────────────────────────────── */
+    .reveal-box {
+      background:rgba(201,168,76,.06);
+      border:1px solid rgba(201,168,76,.22);
+      border-radius:8px;
+      padding:1.1rem 1.4rem;
+      margin-top:1.2rem;
+      animation:fadeUp .4s ease;
+    }
+    .reveal-box .rl { font-family:'Cinzel',serif; font-size:.62rem; letter-spacing:.2em; color:var(--gold); text-transform:uppercase; margin-bottom:.3rem; }
+    .reveal-box .rv { font-size:1rem; }
+
+    @keyframes fadeUp {
+      from{opacity:0;transform:translateY(10px)}
+      to{opacity:1;transform:translateY(0)}
+    }
+
+    /* ── SUDOKU ──────────────────────────────────────────── */
+    .sudoku-wrap { overflow-x:auto; margin:1.4rem 0; }
+    .sudoku-grid {
+      display:grid;
+      grid-template-columns:repeat(9, 1fr);
+      width:min(360px, 100%);
+      margin:0 auto;
+      border:2px solid var(--gold-dk);
+      border-radius:5px;
+      overflow:hidden;
+      background:var(--border);
+      gap:1px;
+    }
+    .sd {
+      background:var(--surface2);
+      aspect-ratio:1;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-family:'Source Code Pro',monospace;
+      font-size:clamp(9px,2.2vw,17px);
+      position:relative;
+    }
+    /* thick box borders */
+    .sd.br2 { border-right:2px solid var(--gold-dk); }
+    .sd.bb2 { border-bottom:2px solid var(--gold-dk); }
+
+    .sd.given { color:var(--muted); }
+    .sd.marked { background:rgba(201,168,76,.15); outline:1px solid var(--gold-dk); }
+    .sd.marked.given { color:var(--gold); font-weight:700; }
+
+    .sd input {
+      width:100%; height:100%;
+      background:transparent; border:none;
+      text-align:center;
+      font-family:'Source Code Pro',monospace;
+      font-size:clamp(9px,2.2vw,17px);
+      color:var(--cream);
+      outline:none; padding:0;
+      min-width:0;
+    }
+    .sd.marked input { color:var(--gold-lt); font-weight:600; }
+
+    .pin-hint {
+      text-align:center;
+      font-family:'Cinzel',serif;
+      font-size:.72rem;
+      letter-spacing:.15em;
+      color:var(--gold);
+      margin:.6rem 0 .3rem;
+      text-transform:uppercase;
+    }
+
+    /* ── CROSSWORD ──────────────────────────────────────── */
+    .cw-img {
+      width:100%;
+      border-radius:8px;
+      border:1px solid var(--border);
+      margin-bottom:1.4rem;
+      display:block;
+    }
+    .cw-grid {
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:.6rem .9rem;
+      margin-bottom:1.2rem;
+    }
+    @media(max-width:480px){ .cw-grid{grid-template-columns:1fr;} }
+    .cw-row {
+      display:flex;
+      gap:.45rem;
+      align-items:center;
+    }
+    .cw-row label {
+      font-family:'Cinzel',serif;
+      font-size:.78rem;
+      color:var(--gold);
+      min-width:1.4rem;
+      text-align:right;
+    }
+    .cw-row input { flex:1; min-width:0; font-size:.92rem; }
+    .cw-row input.ok { color:var(--green-lt); }
+    .cw-row input.err { color:#ff7070; }
+
+    /* ── AUDIO ───────────────────────────────────────────── */
+    .audio-box {
+      border:1px dashed var(--border2);
+      border-radius:10px;
+      padding:1.5rem;
+      text-align:center;
+      margin:1.2rem 0;
+      background:rgba(0,0,0,.2);
+    }
+    .audio-box .alabel {
+      font-family:'Cinzel',serif;
+      font-size:.68rem;
+      letter-spacing:.22em;
+      color:var(--gold);
+      text-transform:uppercase;
+      margin-bottom:.6rem;
+    }
+    .audio-box audio { width:100%; margin:.7rem 0; accent-color:var(--gold); }
+    .audio-box a {
+      display:inline-block;
+      color:var(--gold-lt);
+      text-decoration:none;
+      border:1px solid var(--gold-dk);
+      border-radius:5px;
+      padding:.4rem 1rem;
+      font-family:'Cinzel',serif;
+      font-size:.78rem;
+      letter-spacing:.08em;
+      transition:all .2s;
+    }
+    .audio-box a:hover { background:var(--glow-gold); }
+
+    /* ── ROT13 ──────────────────────────────────────────── */
+    .rot-img {
+      width:100%;
+      border-radius:8px;
+      border:1px solid var(--border);
+      margin:.8rem 0;
+      display:block;
+    }
+    .encoded-text {
+      font-family:'Source Code Pro',monospace;
+      font-size:1.15rem;
+      color:var(--cream);
+      background:rgba(0,0,0,.3);
+      border:1px solid var(--border2);
+      border-radius:6px;
+      padding:.9rem 1.3rem;
+      margin:.8rem 0;
+      letter-spacing:.06em;
+      word-break:break-all;
+    }
+    .red-hint {
+      color:var(--red);
+      font-style:italic;
+      font-weight:600;
+      font-size:1rem;
+    }
+
+    /* ── MACRO PHOTO ─────────────────────────────────────── */
+    .macro-img {
+      width:100%;
+      border-radius:8px;
+      border:1px solid var(--border);
+      margin:.9rem 0;
+      display:block;
+    }
+
+    /* ── FINAL STAGE ─────────────────────────────────────── */
+    .final-wrap { text-align:center; padding:1rem 0 2rem; }
+    .final-title {
+      font-family:'Cinzel',serif;
+      font-size:clamp(1.5rem,5vw,2.4rem);
+      font-weight:900;
+      color:var(--gold);
+      text-shadow:0 0 50px rgba(201,168,76,.5);
+      margin-bottom:1.2rem;
+      animation:pulse 3s infinite;
+    }
+    @keyframes pulse {
+      0%,100%{text-shadow:0 0 30px rgba(201,168,76,.4)}
+      50%{text-shadow:0 0 60px rgba(201,168,76,.7)}
+    }
+    .final-coords {
+      font-family:'Source Code Pro',monospace;
+      font-size:1.05rem;
+      color:var(--gold-lt);
+      background:rgba(201,168,76,.07);
+      border:1px solid rgba(201,168,76,.25);
+      border-radius:8px;
+      padding:1.2rem 1.5rem;
+      margin:1.2rem 0;
+      word-break:break-all;
+    }
+    .maps-link {
+      display:inline-block;
+      background:var(--gold);
+      color:#05050a;
+      font-family:'Cinzel',serif;
+      font-weight:700;
+      font-size:.9rem;
+      letter-spacing:.1em;
+      text-decoration:none;
+      padding:.85rem 2.2rem;
+      border-radius:7px;
+      text-transform:uppercase;
+      transition:all .2s;
+      margin-top:1rem;
+    }
+    .maps-link:hover { background:var(--gold-lt); box-shadow:0 0 30px rgba(201,168,76,.4); }
+
+    /* ── DONE BADGE ──────────────────────────────────────── */
+    .done-badge {
+      display:inline-flex;
+      align-items:center;
+      gap:.4rem;
+      background:rgba(46,125,50,.15);
+      border:1px solid var(--green);
+      border-radius:20px;
+      padding:.3rem .9rem;
+      font-family:'Cinzel',serif;
+      font-size:.68rem;
+      letter-spacing:.12em;
+      color:var(--green-lt);
+      text-transform:uppercase;
+      margin-top:1rem;
+    }
+
+    /* ── 404 PAGE ────────────────────────────────────────── */
+    #page404 {
+      display:none;
+      min-height:100vh;
+      background:#0b0b14;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      font-family:'Source Code Pro',monospace;
+      padding:2rem;
+      text-align:center;
+    }
+    #page404.show { display:flex; }
+    .err-big { font-size:min(10rem,25vw); color:#1a1a2e; line-height:1; font-weight:900; letter-spacing:-.02em; }
+    .err-label { font-size:1.1rem; color:#2a2a45; margin:.8rem 0; }
+    .err-sub { font-size:.85rem; color:#1e1e30; max-width:420px; }
+    /* Hidden text – invisible unless selected */
+    .secret-layer {
+      margin-top:3rem;
+      color:#0b0b14; /* same as page bg = invisible */
+      user-select:text;
+      font-size:.78rem;
+      max-width:400px;
+      line-height:1.6;
+    }
+    .found-btn {
+      margin-top:2.5rem;
+      font-family:'Cinzel',serif;
+      font-size:.78rem;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      padding:.6rem 1.4rem;
+      border-radius:6px;
+      border:1px solid #252545;
+      background:transparent;
+      color:#252545;
+      cursor:pointer;
+      transition:all .3s;
+    }
+    .found-btn:hover { border-color:var(--gold-dk); color:var(--gold-dk); }
+
+    /* ── RESET ───────────────────────────────────────────── */
+    .reset-wrap { text-align:center; margin-top:3rem; }
+    .reset-btn {
+      background:transparent;
+      border:1px solid #1e1e30;
+      color:#2a2a40;
+      padding:.35rem .9rem;
+      border-radius:4px;
+      font-size:.75rem;
+      cursor:pointer;
+      transition:all .2s;
+    }
+    .reset-btn:hover { border-color:var(--red-dim); color:#804040; }
+
+    /* ── UTILS ───────────────────────────────────────────── */
+    .mt1 { margin-top:.6rem; }
+    .mt2 { margin-top:1.2rem; }
+    .italic { font-style:italic; }
+    .small { font-size:.88rem; }
+    .muted { color:var(--muted); }
+    .gold { color:var(--gold); }
+    .mono { font-family:'Source Code Pro',monospace; }
+    code {
+      font-family:'Source Code Pro',monospace;
+      font-size:.88em;
+      background:rgba(255,255,255,.06);
+      border:1px solid var(--border);
+      border-radius:3px;
+      padding:.1em .35em;
+    }
+
+    hr.divider {
+      border:none;
+      border-top:1px solid var(--border);
+      margin:1.2rem 0;
+    }
+  </style>
 </head>
 <body>
-    <h1>Hallo Welt! 👋</h1>
+
+<!-- ══════════════════════════════════════════════════════════
+     FAKE 404 PAGE  (shown when URL path contains "geheimnis")
+     ════════════════════════════════════════════════════════ -->
+<div id="page404">
+  <div class="err-big">404</div>
+  <div class="err-label">Not Found</div>
+  <div class="err-sub">The requested resource could not be located on this server.</div>
+
+  <!-- HIDDEN TEXT – same color as background, visible only when selected -->
+  <div class="secret-layer" id="secretText">
+    Herzlichen Glückwunsch, du hast das Geheimnis entdeckt!<br>
+    Der Nächste Ort: 口寄せ・穢土転生<br>
+    (Hinweis: Dies sind Jutsu-Namen aus Naruto — Kuchiyose no Jutsu &amp; Edo Tensei.
+    Überlege, welcher reale Ort damit gemeint sein könnte.)
+  </div>
+
+  <button class="found-btn" onclick="complete404()">Geheimnis entdeckt — weiter →</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MAIN HUNT
+     ════════════════════════════════════════════════════════ -->
+<div id="mainPage">
+  <div class="wrap">
+
+    <header class="site-header">
+      <h1>SCHNITZELJAGD</h1>
+      <p>Folge den Hinweisen — Schritt für Schritt zur Wahrheit.</p>
+    </header>
+
+    <!-- Coordinate progress bar -->
+    <div class="coord-bar">
+      <div class="cb-label">Koordinaten – bisher entschlüsselt</div>
+      <div class="cb-val" id="coordDisplay">???</div>
+      <div class="cb-hint" id="coordHint">Löse die erste Aufgabe, um zu beginnen…</div>
+    </div>
+
+    <!-- ────────────── STAGE 1 – BASE64 ───────────────── -->
+    <div class="stage-card" id="s1">
+      <div class="stage-num">Aufgabe 01 — Der verschlüsselte Umschlag</div>
+      <div class="stage-title">Base64-Codierung</div>
+      <div class="stage-body">
+        <p>Auf dem Zettel im Umschlag steht eine seltsame Zeichenfolge:</p>
+        <p class="mono" style="font-size:1rem;word-break:break-all;background:rgba(0,0,0,.25);padding:.7rem 1rem;border-radius:6px;border:1px solid var(--border);">RWluIHRvbGxlciBUYWcgbWl0IFNhdHpp</p>
+        <p class="italic muted small">Suche nach einer Möglichkeit, diesen kryptischen Text zu dekodieren.<br>(Tipp: Schau dir die Zeichenfolge genau an – welches Kodierungsverfahren könnte das sein?)</p>
+        <div class="input-row">
+          <input type="text" id="s1inp" placeholder="Dekodierter Text…" autocomplete="off" />
+          <button class="btn btn-gold" onclick="checkS1()">Prüfen</button>
+        </div>
+        <div class="err-msg" id="s1err"></div>
+      </div>
+    </div>
+
+    <!-- ────────────── STAGE 2 – SUDOKU ──────────────── -->
+    <div class="stage-card locked" id="s2">
+      <div class="stage-num">Aufgabe 02 — Das Zahlenrätsel</div>
+      <div class="stage-title">Sudoku-PIN</div>
+      <div class="stage-body">
+        <p>Löse das Sudoku. Die vier <span class="gold">golden markierten</span> Felder ergeben – in Lesereihenfolge (links→rechts, oben→unten) – eine vierstellige PIN.</p>
+
+        <div class="sudoku-wrap">
+          <div class="sudoku-grid" id="sudokuGrid"></div>
+        </div>
+        <div class="pin-hint">↑ Markierte Felder → PIN eingeben ↓</div>
+
+        <div class="input-row">
+          <input type="text" id="s2inp" placeholder="4-stellige PIN…" maxlength="4" autocomplete="off" inputmode="numeric" />
+          <button class="btn btn-gold" onclick="checkS2()">Prüfen</button>
+        </div>
+        <div class="err-msg" id="s2err"></div>
+
+        <div id="s2reveal" style="display:none" class="reveal-box">
+          <div class="rl">Nächster Hinweis</div>
+          <div class="rv">Mach dich auf den Weg: <strong>Ein Fastfood-Laden neben einem Schuhgeschäft.</strong><br>
+          Das Passwort dort lautet: <code>DEZ</code></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────────── STAGE 3 – LOGIC PUZZLE ─────────── -->
+    <div class="stage-card locked" id="s3">
+      <div class="stage-num">Aufgabe 03 — Das Logikrätsel</div>
+      <div class="stage-title">Zwei Türen, zwei Wächter</div>
+      <div class="stage-body">
+        <p>Du stehst vor zwei Türen: Eine führt in den Himmel, die andere in die Hölle.</p>
+        <p>Zwei Wächter bewachen die Türen. Einer sagt immer die Wahrheit, der andere lügt immer. Du weißt nicht, wer wer ist.</p>
+        <p><strong>Du darfst einem der Wächter genau eine einzige Frage stellen.</strong></p>
+        <p class="italic muted small">Welche Frage stellst du — und welche Tür wählst du?</p>
+
+        <hr class="divider" />
+        <p class="small muted">Wenn du die Antwort kennst, drücke den Knopf:</p>
+        <div class="mt1">
+          <button class="btn btn-green" onclick="advanceStage(3)" id="s3btn">✓ Rätsel bestanden!</button>
+        </div>
+
+        <div id="s3solution" style="display:none" class="reveal-box mt2">
+          <div class="rl">Lösung</div>
+          <div class="rv">
+            Frage einen der Wächter: <em>„Auf welche Tür würde der andere Wächter zeigen, wenn ich frage, wo der Himmel ist?"</em><br><br>
+            Egal wen du fragst – beide zeigen auf die <strong>Hölle</strong>. Du nimmst deshalb einfach die <strong>andere Tür</strong>.<br><br>
+            <span class="muted small">Warum? Der Wahrheitssager berichtet ehrlich, dass der Lügner auf die Hölle zeigen würde. Der Lügner lügt darüber, dass der Wahrheitssager auf den Himmel zeigen würde – und zeigt ebenfalls auf die Hölle.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────────── STAGE 4 – FAKE 404 ────────────── -->
+    <div class="stage-card locked" id="s4">
+      <div class="stage-num">Aufgabe 04 — Fehler 404</div>
+      <div class="stage-title">Die nicht existierende Seite</div>
+      <div class="stage-body">
+        <p>Manche Fehler sind kein Zufall. Rufe folgenden Pfad auf deiner Website auf:</p>
+        <p class="mono" style="font-size:1rem;background:rgba(0,0,0,.25);padding:.6rem 1rem;border-radius:6px;border:1px solid var(--border);">
+          <a id="s4link" href="/geheimnis" target="_blank" style="color:var(--gold-lt);text-decoration:none;">/geheimnis</a>
+        </p>
+        <p class="italic muted small">Die Seite sieht wie ein Fehler aus – aber schau genauer hin. Vielleicht hilft es, alles zu <strong>markieren</strong>…</p>
+
+        <div class="mt2">
+          <button class="btn btn-green" onclick="advanceStage(4)">✓ Ort gefunden!</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────────── STAGE 5 – AUDIO SPEKTROGRAMM ───── -->
+    <div class="stage-card locked" id="s5">
+      <div class="stage-num">Aufgabe 05 — Das Tonsignal</div>
+      <div class="stage-title">Audiospektrogramm</div>
+      <div class="stage-body">
+        <p>Was hörst du in dieser Datei? Rauschen? Knistern? Musik?</p>
+        <p class="italic muted small">Manchmal steckt die Botschaft nicht im Klang selbst – sondern in seinen Frequenzen. Lade die Datei in einen <strong>Online-Spektrogramm-Viewer</strong> und sieh, was sich versteckt.</p>
+
+        <div class="audio-box">
+          <div class="alabel">Audiospektrogramm</div>
+          <audio controls src="result.wav"></audio>
+          <br>
+          <a href="result.wav" download>⬇ Herunterladen (result.wav)</a>
+        </div>
+
+        <p class="small muted">Tipp: Gehe auf <code>academo.org/demos/spectrum-analyzer</code> oder <code>dsp.stackexchange.com</code> – lade die WAV-Datei hoch und betrachte die Visualisierung genau.</p>
+
+        <div class="mt2">
+          <button class="btn btn-green" onclick="advanceStage(5)">✓ Ort gefunden!</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────────── STAGE 6 – KREUZWORTRÄTSEL ────────── -->
+    <div class="stage-card locked" id="s6">
+      <div class="stage-num">Aufgabe 06 — Das Kreuzworträtsel</div>
+      <div class="stage-title">Ninja-Wissen gefragt</div>
+      <div class="stage-body">
+        <p>Löse das Kreuzworträtsel. Die grauen Felder ergeben das Lösungswort.</p>
+
+        <img src="crossword.png" alt="Kreuzworträtsel" class="cw-img" onerror="this.style.display='none'" />
+
+        <div class="cw-grid" id="cwGrid"></div>
+
+        <div class="input-row">
+          <button class="btn btn-gold" onclick="checkCrossword()">Alle Antworten prüfen</button>
+        </div>
+        <div class="err-msg" id="s6err"></div>
+
+        <div id="s6reveal" style="display:none" class="reveal-box mt2">
+          <div class="rl">Lösungswort</div>
+          <div class="rv" style="font-size:1.3rem;font-family:'Cinzel',serif;letter-spacing:.1em;color:var(--gold);">GEHE ZUM INN</div>
+          <div class="mt1">
+            <button class="btn btn-green" onclick="advanceStage(6)">✓ Ort gefunden!</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────────── STAGE 7 – WIFI SSID ───────────────── -->
+    <div class="stage-card locked" id="s7">
+      <div class="stage-num">Aufgabe 07 — Verborgene Signale</div>
+      <div class="stage-title">Die Luft ist voller Geheimnisse</div>
+      <div class="stage-body">
+        <p>Die Luft ist erfüllt von geheimen Signalen.</p>
+        <p><strong>Suche nach der richtigen Frequenz.</strong></p>
+        <p class="muted small italic">Öffne die WLAN-Einstellungen deines Telefons und schau dir alle verfügbaren Netzwerke an. Ein Netzwerkname selbst verrät dir, wohin du gehen musst.</p>
+
+        <div class="mt2">
+          <button class="btn btn-green" onclick="advanceStage(7)">✓ Ort gefunden!</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────────── STAGE 8 – ROT13 ───────────────────── -->
+    <div class="stage-card locked" id="s8">
+      <div class="stage-num">Aufgabe 08 — Die Verschlüsselung</div>
+      <div class="stage-title">ROT13</div>
+      <div class="stage-body">
+        <img src="rot13.jpg" alt="ROT13" class="rot-img" onerror="this.style.display='none'" />
+
+        <p>Der folgende Text ist verschlüsselt. Dekodiere ihn, um deinen nächsten Ort zu finden:</p>
+        <div class="encoded-text">Qnf Erfgnhenaag Anzv. Thgra Nccrghvg!</div>
+
+        <p class="red-hint mt1">Tipp: Gehe genau 13 Schritte im Kreis, um die Wahrheit zu finden.</p>
+
+        <div class="input-row">
+          <input type="text" id="s8inp" placeholder="Dekodierte Antwort…" autocomplete="off" />
+          <button class="btn btn-gold" onclick="checkS8()">Prüfen</button>
+        </div>
+        <div class="err-msg" id="s8err"></div>
+      </div>
+    </div>
+
+    <!-- ────────────── STAGE 9 – MAKRO FOTO ─────────────── -->
+    <div class="stage-card locked" id="s9">
+      <div class="stage-num">Aufgabe 09 — Extremes Detail</div>
+      <div class="stage-title">Makro-Geoguessr</div>
+      <div class="stage-body">
+        <p>Was siehst du hier? Erkenne das Objekt – und wo es sich befindet.</p>
+
+        <img src="macro.jpg" alt="Detail-Foto" class="macro-img" onerror="this.style.display='none'" />
+
+        <p class="muted small italic">Schau genau hin: Material, Form, Stil, Kontext. Was könnte das sein, und wo steht es?</p>
+
+        <div class="input-row">
+          <input type="text" id="s9inp" placeholder="Deine Antwort (Ort/Denkmal)…" autocomplete="off" />
+          <button class="btn btn-gold" onclick="checkS9()">Prüfen</button>
+        </div>
+        <div class="err-msg" id="s9err"></div>
+      </div>
+    </div>
+
+    <!-- ────────────── STAGE 10 – FINALE ─────────────────── -->
+    <div class="stage-card locked" id="s10">
+      <div class="stage-num">Aufgabe 10 — Das Ziel</div>
+      <div class="stage-title">Die vollständigen Koordinaten</div>
+      <div class="stage-body">
+        <div class="final-wrap" id="finalContent" style="display:none">
+          <div class="final-title">🎉 Herzlichen Glückwunsch!</div>
+          <p>Du hast alle Rätsel gelöst. Hier sind die vollständigen Koordinaten:</p>
+          <div class="final-coords">
+            47.085215581730914, 11.471382617129986
+          </div>
+          <a href="https://maps.google.com/?q=47.085215581730914,11.471382617129986" target="_blank" class="maps-link">
+            🗺 In Google Maps öffnen
+          </a>
+          <p class="mt2 muted small italic">Du hast es geschafft – folge den Koordinaten zu deinem letzten Ziel!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reset button (hidden, low contrast) -->
+    <div class="reset-wrap">
+      <button class="reset-btn" onclick="confirmReset()">Fortschritt zurücksetzen</button>
+    </div>
+
+  </div><!-- /wrap -->
+</div><!-- /mainPage -->
+
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   DATA & STATE
+   ═══════════════════════════════════════════════════════════ */
+
+// Coordinate reveal per completed stage
+const COORDS = [
+  "???",
+  "47.",
+  "47.085",
+  "47.08521",
+  "47.085215581",
+  "47.085215581730914,",
+  "47.085215581730914, 11.",
+  "47.085215581730914, 11.471",
+  "47.085215581730914, 11.471382",
+  "47.085215581730914, 11.471382617",
+  "47.085215581730914, 11.471382617129986"
+];
+
+const COORD_HINTS = [
+  "Löse die erste Aufgabe, um zu beginnen…",
+  "Gut! Erster Teil enthüllt. Weiter geht's…",
+  "Zweiter Teil enthüllt – finde den nächsten Hinweis!",
+  "Gut gemacht – noch ein Schritt.",
+  "Weiter so! Die Koordinaten nehmen Form an.",
+  "Bravo! Erste Koordinate vollständig.",
+  "Mehr als die Hälfte geschafft!",
+  "Du bist nah dran!",
+  "Fast vollständig…",
+  "Noch eine letzte Aufgabe…",
+  "VOLLSTÄNDIG – folge den Koordinaten!"
+];
+
+// ── Sudoku ────────────────────────────────────────────────
+// Solution grid (used for validation feedback)
+const SD_SOL = [
+  [5,3,4,6,7,8,9,1,2],
+  [6,7,2,1,9,5,3,4,8],
+  [1,9,8,3,4,2,5,6,7],
+  [8,5,9,7,6,1,4,2,3],  // row 3: marked cells [3][3]=7, [3][4]=6
+  [4,2,6,8,5,3,7,9,1],  // row 4: marked cells [4][3]=8, [4][4]=5
+  [7,1,3,9,2,4,8,5,6],
+  [9,6,1,5,3,7,2,8,4],
+  [2,8,7,4,1,9,6,3,5],
+  [3,4,5,2,8,6,1,7,9]
+];
+// 0 = empty (user fills in), >0 = given
+const SD_PUZ = [
+  [5,0,4,6,7,0,9,1,0],
+  [6,7,0,0,9,5,3,0,8],
+  [0,9,8,3,0,2,0,6,7],
+  [8,0,9,0,0,1,4,2,0], // [3][3] and [3][4] are MARKED + empty
+  [0,2,6,0,0,3,7,9,1], // [4][3] and [4][4] are MARKED + empty
+  [7,1,0,9,2,4,8,0,6],
+  [9,6,1,5,3,0,2,8,0],
+  [0,8,7,4,0,9,6,3,5],
+  [3,4,5,0,8,6,1,7,9]
+];
+// Marked cells – their values form PIN 7685
+const MARKED = [[3,3],[3,4],[4,3],[4,4]];
+const SUDOKU_PIN = "7685";
+
+function isMarked(r,c) { return MARKED.some(([mr,mc])=>mr===r&&mc===c); }
+
+// ── Crossword ─────────────────────────────────────────────
+const CW_Q = [
+  { n:1,  q:"Ein von Orochimaru gegründetes verstecktes Ninja-Dorf im Reisfeld-Reich" },
+  { n:2,  q:'Wer ist als erster "Rikudou Sennin" bekannt?' },
+  { n:3,  q:"Wer hat Akatsuki gegründet?" },
+  { n:4,  q:"Welches Mitglied von Akatsuki fungierte hauptsächlich als Spion, entsorgte Leichen und konnte mit der Umgebung verschmelzen?" },
+  { n:5,  q:"Wie heißt das Sondereinsatzkommando der Ninja?" },
+  { n:6,  q:"Wie wird Tsunade aufgrund ihrer Position als fünfte Hokage offiziell bezeichnet?" },
+  { n:7,  q:"Welcher Ninja-Rang ist der Niedrigste?" },
+  { n:8,  q:"Welches Tier ist Aoda?" },
+  { n:9,  q:"Zu welchem Clan gehört Kiba?" },
+  { n:10, q:"Welche Augenfarbe hat Naruto im Sage Mode (Sennin Modus)?" }
+];
+const CW_ANS = {
+  1:"otogakure", 2:"hagoromo", 3:"yahiko", 4:"zetsu",
+  5:"anbu", 6:"godaime", 7:"genin", 8:"schlange",
+  9:"inuzuka", 10:"orange"
+};
+
+// ── Stage state ───────────────────────────────────────────
+let stage = parseInt(localStorage.getItem("sj_stage") || "1");
+
+/* ═══════════════════════════════════════════════════════════
+   ROUTING – check if on /geheimnis
+   ═══════════════════════════════════════════════════════════ */
+(function routeCheck() {
+  const path = window.location.pathname;
+  const hash = window.location.hash;
+  if (path.includes("geheimnis") || hash.includes("geheimnis")) {
+    document.getElementById("page404").classList.add("show");
+    document.getElementById("mainPage").style.display = "none";
+  }
+})();
+
+function complete404() {
+  // Mark stage 4 done if not already past it
+  if (stage <= 4) {
+    stage = 4;
+    localStorage.setItem("sj_stage", stage);
+  }
+  window.location.href = "/";
+}
+
+/* ═══════════════════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════════════════ */
+document.addEventListener("DOMContentLoaded", () => {
+  buildSudoku();
+  buildCrossword();
+  renderAll();
+});
+
+/* ═══════════════════════════════════════════════════════════
+   RENDER
+   ═══════════════════════════════════════════════════════════ */
+function renderAll() {
+  // Coordinate bar
+  const completed = stage - 1; // stages completed so far
+  document.getElementById("coordDisplay").textContent = COORDS[Math.min(completed, 10)];
+  document.getElementById("coordHint").textContent    = COORD_HINTS[Math.min(completed, 10)];
+
+  // Stage cards
+  for (let i = 1; i <= 10; i++) {
+    const card = document.getElementById("s" + i);
+    card.classList.remove("active","done","locked");
+    if (i < stage)       card.classList.add("done");
+    else if (i === stage) card.classList.add("active");
+    else                  card.classList.add("locked");
+  }
+
+  // Stage-specific reveals
+  if (stage > 2) {
+    const r = document.getElementById("s2reveal");
+    if (r) r.style.display = "block";
+  }
+  if (stage > 3) {
+    const r = document.getElementById("s3solution");
+    if (r) r.style.display = "block";
+  }
+  if (stage >= 10) {
+    document.getElementById("finalContent").style.display = "block";
+  }
+
+  // Scroll to active stage smoothly
+  const activeCard = document.querySelector(".stage-card.active");
+  if (activeCard) {
+    setTimeout(() => activeCard.scrollIntoView({ behavior:"smooth", block:"nearest" }), 150);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ADVANCE STAGE (generic – for "Ja / Ort gefunden" buttons)
+   ═══════════════════════════════════════════════════════════ */
+function advanceStage(fromStage) {
+  if (stage === fromStage) {
+    stage = fromStage + 1;
+    localStorage.setItem("sj_stage", stage);
+    renderAll();
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   STAGE 1 – BASE64
+   ═══════════════════════════════════════════════════════════ */
+function checkS1() {
+  if (stage !== 1) return;
+  const val = document.getElementById("s1inp").value.trim().toLowerCase();
+  const inp = document.getElementById("s1inp");
+  const err = document.getElementById("s1err");
+
+  const correct = "ein toller tag mit satzi";
+  if (val === correct) {
+    inp.classList.remove("err"); inp.classList.add("ok");
+    err.textContent = "";
+    // Reveal location hint and advance
+    showS1Success();
+    stage = 2;
+    localStorage.setItem("sj_stage", stage);
+    setTimeout(renderAll, 600);
+  } else {
+    inp.classList.add("err"); inp.classList.remove("ok");
+    inp.classList.remove("err");
+    void inp.offsetWidth; // reflow for animation
+    inp.classList.add("err");
+    err.textContent = "Das ist leider nicht richtig. Suche nach einer Methode, den Text zu dekodieren.";
+  }
+}
+
+function showS1Success() {
+  const card = document.getElementById("s1");
+  const box = document.createElement("div");
+  box.className = "reveal-box";
+  box.innerHTML = `<div class="rl">✓ Richtig! Erster Koordinaten-Teil enthüllt</div>
+    <div class="rv"><strong>Nächster Hinweis:</strong> Wo schaltet man den Kinder-Airbag aus?<br>
+    <span class="muted small">(Schau dich in der Nähe um – dort wartet der nächste QR-Code.)</span></div>`;
+  card.querySelector(".stage-body").appendChild(box);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   STAGE 2 – SUDOKU
+   ═══════════════════════════════════════════════════════════ */
+function buildSudoku() {
+  const grid = document.getElementById("sudokuGrid");
+  grid.innerHTML = "";
+
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const cell = document.createElement("div");
+      cell.className = "sd";
+      // Right-border for columns 2,5 (0-indexed) = thick box borders
+      if (c === 2 || c === 5) cell.classList.add("br2");
+      // Bottom-border for rows 2,5
+      if (r === 2 || r === 5) cell.classList.add("bb2");
+      if (isMarked(r,c)) cell.classList.add("marked");
+
+      const val = SD_PUZ[r][c];
+      if (val !== 0) {
+        cell.classList.add("given");
+        cell.textContent = val;
+      } else {
+        const inp = document.createElement("input");
+        inp.type = "text"; inp.maxLength = 1; inp.inputMode = "numeric";
+        inp.addEventListener("input", e => {
+          const v = e.target.value.replace(/[^1-9]/g,"");
+          e.target.value = v;
+          // Auto-focus next cell
+          if (v) {
+            const inputs = Array.from(document.querySelectorAll(".sudoku-grid input"));
+            const idx = inputs.indexOf(e.target);
+            if (idx >= 0 && idx < inputs.length - 1) inputs[idx+1].focus();
+          }
+        });
+        cell.appendChild(inp);
+      }
+      grid.appendChild(cell);
+    }
+  }
+}
+
+function checkS2() {
+  if (stage !== 2) return;
+  const val = document.getElementById("s2inp").value.trim();
+  const inp = document.getElementById("s2inp");
+  const err = document.getElementById("s2err");
+
+  if (val === SUDOKU_PIN) {
+    inp.classList.remove("err"); inp.classList.add("ok");
+    err.textContent = "";
+    document.getElementById("s2reveal").style.display = "block";
+    stage = 3;
+    localStorage.setItem("sj_stage", stage);
+    setTimeout(renderAll, 600);
+  } else {
+    inp.classList.remove("err");
+    void inp.offsetWidth;
+    inp.classList.add("err");
+    err.textContent = "Falsche PIN. Löse das Sudoku vollständig und lies die markierten Felder ab.";
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   STAGE 6 – CROSSWORD
+   ═══════════════════════════════════════════════════════════ */
+function buildCrossword() {
+  const container = document.getElementById("cwGrid");
+  container.innerHTML = "";
+  CW_Q.forEach(({ n, q }) => {
+    const row = document.createElement("div");
+    row.className = "cw-row";
+    row.innerHTML = `<label>${n}.</label>`;
+    const inp = document.createElement("input");
+    inp.type = "text";
+    inp.id = "cw" + n;
+    inp.placeholder = q.length > 50 ? q.substring(0,47)+"…" : q;
+    inp.title = q;
+    inp.autocomplete = "off";
+    row.appendChild(inp);
+    container.appendChild(row);
+  });
+}
+
+function checkCrossword() {
+  if (stage !== 6) return;
+  const err = document.getElementById("s6err");
+  let allCorrect = true;
+  let wrong = [];
+
+  CW_Q.forEach(({ n }) => {
+    const inp = document.getElementById("cw" + n);
+    const val = inp.value.trim().toLowerCase().replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss");
+    const ans = CW_ANS[n];
+    // also check original umlauts version
+    const valOrig = inp.value.trim().toLowerCase();
+
+    if (valOrig === ans || val === ans) {
+      inp.classList.remove("err"); inp.classList.add("ok");
+    } else {
+      inp.classList.remove("ok"); inp.classList.add("err");
+      allCorrect = false;
+      wrong.push(n);
+    }
+  });
+
+  if (allCorrect) {
+    err.textContent = "";
+    document.getElementById("s6reveal").style.display = "block";
+  } else {
+    err.textContent = `Noch nicht ganz – überprüfe Frage ${wrong.join(", ")}.`;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   STAGE 8 – ROT13
+   ═══════════════════════════════════════════════════════════ */
+function checkS8() {
+  if (stage !== 8) return;
+  const val = document.getElementById("s8inp").value.trim().toLowerCase();
+  const inp = document.getElementById("s8inp");
+  const err = document.getElementById("s8err");
+
+  // Accept "nami", "restaurant nami", "das restaurant nami"
+  const valid = ["nami","restaurant nami","das restaurant nami","das restaurant nami. guten appetit!","das restaurant nami. guten appetit"];
+  if (valid.some(v => val.includes("nami"))) {
+    inp.classList.remove("err"); inp.classList.add("ok");
+    err.textContent = "";
+
+    const box = document.createElement("div");
+    box.className = "reveal-box mt2";
+    box.innerHTML = `<div class="rl">✓ Korrekt!</div>
+      <div class="rv">Das Restaurant <strong>Nami</strong>. Guten Appetit! 🍣</div>`;
+    document.getElementById("s8").querySelector(".stage-body").appendChild(box);
+
+    stage = 9;
+    localStorage.setItem("sj_stage", stage);
+    setTimeout(renderAll, 700);
+  } else {
+    inp.classList.remove("err");
+    void inp.offsetWidth;
+    inp.classList.add("err");
+    err.textContent = "Nicht ganz – denk an die Verschlüsselung: jeder Buchstabe wird um 13 Stellen verschoben.";
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   STAGE 9 – MACRO PHOTO
+   ═══════════════════════════════════════════════════════════ */
+function checkS9() {
+  if (stage !== 9) return;
+  const val = document.getElementById("s9inp").value.trim().toLowerCase();
+  const inp = document.getElementById("s9inp");
+  const err = document.getElementById("s9err");
+
+  const valid = ["annasäule","annasaule","anna säule","anna saule","annensäule","mariensäule","annasäule innsbruck"];
+  if (valid.some(v => val.includes("anna") || val.includes("säule") || val.includes("saule"))) {
+    inp.classList.remove("err"); inp.classList.add("ok");
+    err.textContent = "";
+
+    const box = document.createElement("div");
+    box.className = "reveal-box mt2";
+    box.innerHTML = `<div class="rl">✓ Richtig!</div>
+      <div class="rv">Die <strong>Annasäule</strong> in Innsbruck – sehr gut erkannt! Die letzte Koordinate wird freigeschaltet…</div>`;
+    document.getElementById("s9").querySelector(".stage-body").appendChild(box);
+
+    stage = 10;
+    localStorage.setItem("sj_stage", stage);
+    setTimeout(renderAll, 700);
+  } else {
+    inp.classList.remove("err");
+    void inp.offsetWidth;
+    inp.classList.add("err");
+    err.textContent = "Noch nicht richtig – was siehst du auf dem Bild? Schau auf Material und Stil.";
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   STAGE 3 override – show solution on advance
+   ═══════════════════════════════════════════════════════════ */
+// Patch advanceStage to also show solution for stage 3
+const _origAdvance = advanceStage;
+window.advanceStage = function(fromStage) {
+  if (fromStage === 3) {
+    document.getElementById("s3solution").style.display = "block";
+  }
+  if (fromStage === 6) {
+    // already handled by checkCrossword
+    if (stage === 6) {
+      stage = 7;
+      localStorage.setItem("sj_stage", stage);
+      setTimeout(renderAll, 400);
+    }
+    return;
+  }
+  if (stage === fromStage) {
+    stage = fromStage + 1;
+    localStorage.setItem("sj_stage", stage);
+    renderAll();
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════
+   RESET
+   ═══════════════════════════════════════════════════════════ */
+function confirmReset() {
+  if (confirm("Wirklich den gesamten Fortschritt zurücksetzen?")) {
+    localStorage.removeItem("sj_stage");
+    stage = 1;
+    // Clear all inputs
+    document.querySelectorAll("input[type=text],input[type=password]").forEach(i => { i.value=""; i.classList.remove("ok","err"); });
+    // Hide all reveal boxes
+    ["s2reveal","s3solution","s6reveal"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = "none";
+    });
+    document.getElementById("finalContent").style.display = "none";
+    // Remove dynamically added boxes
+    document.querySelectorAll(".reveal-box:not(#s2reveal):not(#s3solution):not(#s6reveal)").forEach(el => el.remove());
+    renderAll();
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ENTER KEY SUPPORT
+   ═══════════════════════════════════════════════════════════ */
+document.addEventListener("keydown", e => {
+  if (e.key !== "Enter") return;
+  const active = e.target;
+  if (active.id === "s1inp") checkS1();
+  else if (active.id === "s2inp") checkS2();
+  else if (active.id === "s8inp") checkS8();
+  else if (active.id === "s9inp") checkS9();
+  else if (active.id && active.id.startsWith("cw")) checkCrossword();
+});
+</script>
+
 </body>
 </html>
-
