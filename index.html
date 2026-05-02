@@ -495,6 +495,7 @@ const SD_PUZ = [
 ];
 const MARKED = [[3,3],[3,4],[4,3],[4,4]];
 const PIN    = "7685";
+const PIN_MASTER = "6862";
 const isMarked = (r,c) => MARKED.some(([mr,mc]) => mr===r && mc===c);
 
 /* Crossword */
@@ -753,8 +754,8 @@ function stg9() { return `
 /* ── 10: Finale ── */
 function stg10() { return `
 <div class="stage-card">
-  <div class="stage-num">Aufgabe 10 — Das Ziel</div>
-  <div class="stage-title">Die vollständigen Koordinaten</div>
+  <div class="stage-num">Aufgabe 10 — Finale Aufgabe</div>
+  <div class="stage-title">Das letzte Ziel</div>
   <div class="stage-body">
     <div class="final-wrap">
       <div class="final-title">🎉 Herzlichen Glückwunsch!</div>
@@ -820,7 +821,8 @@ function initSudoku() {
 function checkS2() {
   const inp = document.getElementById("s2inp"); if (!inp) return;
   const err = document.getElementById("s2err");
-  if (inp.value.trim() === PIN) {
+  const v = inp.value.trim();
+  if (v === PIN || v === PIN_MASTER) {
     inp.classList.add("ok"); advance(2);
   } else {
     triggerErr(inp, err, "Falsche PIN. Löse das Sudoku vollständig und lies die markierten Felder ab.");
