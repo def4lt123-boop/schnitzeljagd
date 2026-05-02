@@ -433,7 +433,7 @@
     </header>
 
     <div class="coord-bar">
-      <div class="cb-label">Koordinaten — bisher entschlüsselt</div>
+      <div class="cb-label">Bisher entschlüsselt</div>
       <div class="cb-val" id="coordDisplay">???</div>
     </div>
 
@@ -725,7 +725,7 @@ function stg8() { return `
   <div class="stage-body">
     <img src="rot13.jpg" alt="Verschlüsselung" class="rot-img" onerror="this.style.display='none'" />
     <p>Der folgende Text ist verschlüsselt. Finde heraus, was er bedeutet:</p>
-    <div class="encoded-text">Qnf Erfgnhenaag Anzv. Thgra Nccrghvg!</div>
+    <div class="encoded-text">Qnf Erfgnhenag Anzv. Thgra Nccrgvg!</div>
     <p class="red-hint mt1">Tipp: Gehe genau 13 Schritte im Kreis, um die Wahrheit zu finden.</p>
     <div class="input-row">
       <input type="text" id="s8inp" placeholder="Entschlüsselte Antwort…" autocomplete="off" />
@@ -759,10 +759,8 @@ function stg10() { return `
   <div class="stage-body">
     <div class="final-wrap">
       <div class="final-title">🎉 Herzlichen Glückwunsch!</div>
-      <p>Du hast alle Rätsel gelöst. Hier sind die vollständigen Koordinaten:</p>
+      <p>Du hast alle Rätsel gelöst.</p>
       <div class="final-coords">47.085215581730914, 11.471382617129986</div>
-      <a href="https://maps.google.com/?q=47.085215581730914,11.471382617129986" target="_blank" class="maps-link">🗺 In Google Maps öffnen</a>
-      <p class="mt2 muted small italic">Folge den Koordinaten zu deinem letzten Ziel!</p>
     </div>
   </div>
 </div>`; }
