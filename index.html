@@ -444,20 +444,31 @@
     .cw-outer { overflow-x: auto; margin: 1.2rem 0; }
     .cw-grid-wrap {
       display: inline-grid;
-      gap: 1px;
-      background: #1a1a2e;
+      grid-template-columns: repeat(14, 28px);
+      grid-template-rows:    repeat(13, 28px);
+      gap: 0;
       border: 2px solid var(--gold-dk);
       border-radius: 5px;
       overflow: hidden;
+      background: #05050e;
+    }
+    @media(max-width:500px){
+      .cw-grid-wrap {
+        grid-template-columns: repeat(14, 22px);
+        grid-template-rows:    repeat(13, 22px);
+      }
     }
     .cw-cell {
-      width: 30px; height: 30px;
-      background: #07070f; /* black = empty */
+      width: 28px; height: 28px;
+      background: #05050e;
       position: relative;
-      flex-shrink: 0;
+      box-sizing: border-box;
     }
-    @media(max-width:500px){ .cw-cell { width:24px; height:24px; } }
-    .cw-cell.active { background: var(--surf2); }
+    @media(max-width:500px){ .cw-cell { width:22px; height:22px; } }
+    .cw-cell.active {
+      background: var(--surf2);
+      border: 1px solid var(--bdr);
+    }
     .cw-cell.active.ok-cell   { background: rgba(46,125,50,.3); }
     .cw-cell.active.err-cell  { background: rgba(192,57,43,.25); }
     .cw-cell .cn {
@@ -468,8 +479,9 @@
       color: var(--gold);
       line-height: 1;
       pointer-events: none;
+      z-index: 1;
     }
-    @media(max-width:500px){ .cw-cell .cn { font-size: 6px; } }
+    @media(max-width:500px){ .cw-cell .cn { font-size: 5px; } }
     .cw-cell input {
       position: absolute;
       inset: 0;
@@ -478,17 +490,22 @@
       border: none;
       text-align: center;
       font-family: 'Cinzel', serif;
-      font-size: 14px;
-      font-weight: 600;
+      font-size: 13px;
+      font-weight: 700;
       color: var(--cream);
       text-transform: uppercase;
       outline: none;
       padding: 0;
       cursor: pointer;
-      caret-color: var(--gold);
+      caret-color: transparent;
+      z-index: 2;
     }
-    @media(max-width:500px){ .cw-cell input { font-size: 11px; } }
-    .cw-cell.active.selected { outline: 2px solid var(--gold); outline-offset: -2px; z-index:2; }
+    @media(max-width:500px){ .cw-cell input { font-size: 10px; } }
+    .cw-cell.selected {
+      outline: 2px solid var(--gold);
+      outline-offset: -2px;
+      z-index: 3;
+    }
 
     .cw-clues {
       display: grid;
@@ -1059,9 +1076,9 @@ const CW_COLS = CW_COLMAX - CW_COLMIN + 1;  // 14
 
 function initCrossword() {
   const wrap = document.getElementById("cwGridWrap"); if (!wrap) return;
-  wrap.style.gridTemplateColumns = `repeat(${CW_COLS}, 1fr)`;
   wrap.innerHTML = "";
 
+  // Fill all 13×14 cells in order so CSS grid places them correctly
   for (let r = CW_ROWMIN; r <= CW_ROWMAX; r++) {
     for (let c = CW_COLMIN; c <= CW_COLMAX; c++) {
       const key = r + "," + c;
@@ -1080,18 +1097,25 @@ function initCrossword() {
         }
         const inp = document.createElement("input");
         inp.type = "text"; inp.maxLength = 1; inp.autocomplete = "off";
+        inp.inputMode = "text";
         inp.dataset.answer = cd.letter;
+        inp.dataset.r = r; inp.dataset.c = c;
         inp.addEventListener("input", e => {
-          e.target.value = e.target.value.replace(/[^a-zA-ZäöüÄÖÜ]/g,"").toUpperCase().slice(-1);
-          cwAutoMove(e.target);
+          e.target.value = e.target.value.replace(/[^a-zA-Z]/g,"").toUpperCase().slice(-1);
+          if (e.target.value) cwMoveNext(r, c);
         });
         inp.addEventListener("focus", () => {
           wrap.querySelectorAll(".cw-cell").forEach(x => x.classList.remove("selected"));
           cell.classList.add("selected");
         });
         inp.addEventListener("keydown", e => {
-          if (e.key === "Backspace" && e.target.value === "") cwMovePrev(e.target);
+          if (e.key === "Backspace" && e.target.value === "") { e.preventDefault(); cwMovePrev(r, c); }
           if (e.key === "Enter") checkCrossword();
+          // Arrow key navigation
+          if (e.key === "ArrowRight") { e.preventDefault(); focusCell(r, c+1); }
+          if (e.key === "ArrowLeft")  { e.preventDefault(); focusCell(r, c-1); }
+          if (e.key === "ArrowDown")  { e.preventDefault(); focusCell(r+1, c); }
+          if (e.key === "ArrowUp")    { e.preventDefault(); focusCell(r-1, c); }
         });
         cell.appendChild(inp);
       }
@@ -1100,19 +1124,46 @@ function initCrossword() {
   }
 }
 
-function cwAutoMove(inp) {
-  if (!inp.value) return;
+function focusCell(r, c) {
   const wrap = document.getElementById("cwGridWrap"); if (!wrap) return;
-  const all = [...wrap.querySelectorAll(".cw-cell.active input")];
-  const i = all.indexOf(inp);
-  if (i >= 0 && i < all.length - 1) all[i+1].focus();
+  const inp = wrap.querySelector(`input[data-r="${r}"][data-c="${c}"]`);
+  if (inp) inp.focus();
 }
 
-function cwMovePrev(inp) {
-  const wrap = document.getElementById("cwGridWrap"); if (!wrap) return;
-  const all = [...wrap.querySelectorAll(".cw-cell.active input")];
-  const i = all.indexOf(inp);
-  if (i > 0) all[i-1].focus();
+function cwMoveNext(r, c) {
+  // Determine direction: find which word this cell belongs to
+  // Try across first (look for a word containing this r,c going right)
+  let moved = false;
+  for (const w of CW_WORDS) {
+    if (w.dir === "across" && w.row === r && c >= w.col && c < w.col + w.answer.length) {
+      const next = c + 1;
+      if (next < w.col + w.answer.length) { focusCell(r, next); moved = true; break; }
+    }
+  }
+  if (!moved) {
+    for (const w of CW_WORDS) {
+      if (w.dir === "down" && w.col === c && r >= w.row && r < w.row + w.answer.length) {
+        const next = r + 1;
+        if (next < w.row + w.answer.length) { focusCell(next, c); moved = true; break; }
+      }
+    }
+  }
+}
+
+function cwMovePrev(r, c) {
+  let moved = false;
+  for (const w of CW_WORDS) {
+    if (w.dir === "across" && w.row === r && c > w.col && c <= w.col + w.answer.length - 1) {
+      focusCell(r, c-1); moved = true; break;
+    }
+  }
+  if (!moved) {
+    for (const w of CW_WORDS) {
+      if (w.dir === "down" && w.col === c && r > w.row && r <= w.row + w.answer.length - 1) {
+        focusCell(r-1, c); moved = true; break;
+      }
+    }
+  }
 }
 
 /* Stage 6 check */
